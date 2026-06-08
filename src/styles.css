@@ -72,7 +72,11 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.8rem clamp(0.75rem, 2.5vw, 2rem);
+  padding:
+    calc(0.8rem + env(safe-area-inset-top))
+    calc(clamp(0.75rem, 2.5vw, 2rem) + env(safe-area-inset-right))
+    0.8rem
+    calc(clamp(0.75rem, 2.5vw, 2rem) + env(safe-area-inset-left));
   border-bottom: 1px solid rgb(23 75 84 / 16%);
   background: rgb(255 250 242 / 94%);
   backdrop-filter: blur(14px);
@@ -167,7 +171,75 @@ button:disabled {
 main {
   width: min(1500px, 100%);
   margin: 0 auto;
-  padding: clamp(0.75rem, 2vw, 1.6rem);
+  padding:
+    clamp(0.75rem, 2vw, 1.6rem)
+    calc(clamp(0.75rem, 2vw, 1.6rem) + env(safe-area-inset-right))
+    calc(clamp(0.75rem, 2vw, 1.6rem) + env(safe-area-inset-bottom))
+    calc(clamp(0.75rem, 2vw, 1.6rem) + env(safe-area-inset-left));
+}
+
+.love-banner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: clamp(0.9rem, 2vw, 1.25rem);
+  border: 2px solid #e7a9a1;
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at 90% 20%, rgb(232 104 85 / 16%), transparent 12rem),
+    #fff6f4;
+  box-shadow: 0 5px 16px rgb(18 48 55 / 7%);
+}
+
+.love-heart {
+  display: grid;
+  width: 4.5rem;
+  height: 4.5rem;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--paper);
+  background: var(--coral);
+  font-size: 2.1rem;
+  box-shadow: var(--shadow);
+}
+
+.love-banner div > span,
+.love-banner strong,
+.love-banner small {
+  display: block;
+}
+
+.love-banner div > span {
+  color: #9d3f3a;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.love-banner strong {
+  margin-top: 0.15rem;
+  color: #762d32;
+  font-size: clamp(1.35rem, 3vw, 2.25rem);
+  line-height: 1.15;
+}
+
+.love-banner small {
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.love-banner button {
+  min-width: 7.5rem;
+  min-height: 4.5rem;
+  border: 2px solid #bd5a50;
+  border-radius: 1rem;
+  color: #762d32;
+  background: var(--paper);
+  font-weight: 900;
 }
 
 .message-panel {
@@ -620,6 +692,117 @@ main {
   font-weight: 700;
 }
 
+.voice-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 2px solid #8fc5b2;
+  border-radius: 1rem;
+  background: #f3fff9;
+}
+
+.voice-status > span {
+  font-size: 2rem;
+}
+
+.voice-status p {
+  margin: 0.3rem 0 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.voice-note {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.85rem;
+  border-left: 4px solid var(--saffron);
+  color: var(--muted);
+  background: #fffdf8;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.voice-test-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.rate-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8rem, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 2px solid var(--line);
+  border-radius: 1rem;
+  background: var(--paper);
+}
+
+.rate-control span,
+.rate-control strong,
+.rate-control small {
+  display: block;
+}
+
+.rate-control small {
+  margin-top: 0.2rem;
+  color: var(--muted);
+}
+
+.rate-control input {
+  width: 100%;
+  min-height: 2.75rem;
+}
+
+.rate-control output {
+  min-width: 3.5rem;
+  font-weight: 900;
+}
+
+.device-setting {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+  padding: 1rem;
+  border: 2px solid var(--line);
+  border-radius: 1rem;
+  background: var(--paper);
+}
+
+.device-setting input {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.device-setting strong,
+.device-setting small {
+  display: block;
+}
+
+.device-setting small {
+  margin-top: 0.2rem;
+  color: var(--muted);
+}
+
+.device-setting.unsupported {
+  opacity: 0.65;
+}
+
+.add-home-note {
+  margin: 0.8rem 0 0;
+  padding: 0.85rem;
+  border-radius: 0.85rem;
+  color: var(--muted);
+  background: rgb(23 75 84 / 7%);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
 .pain-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -878,7 +1061,7 @@ main {
 
   .brand small,
   .edit-button span,
-  .header-actions > .icon-button {
+  .header-actions > .icon-button:not(.voice-button) {
     display: none;
   }
 
@@ -892,6 +1075,21 @@ main {
 
   .message-panel {
     min-height: auto;
+  }
+
+  .love-banner {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .love-heart {
+    width: 3.5rem;
+    height: 3.5rem;
+    font-size: 1.6rem;
+  }
+
+  .love-banner button {
+    grid-column: 1 / -1;
+    min-height: 3.5rem;
   }
 
   .recent-panel {
@@ -973,6 +1171,11 @@ main {
     grid-template-columns: 1fr;
   }
 
+  .voice-test-buttons,
+  .rate-control {
+    grid-template-columns: 1fr;
+  }
+
   .transfer-actions {
     flex-direction: column;
   }
@@ -997,7 +1200,11 @@ main {
 
 @media (max-width: 430px) {
   main {
-    padding: 0.6rem;
+    padding:
+      0.6rem
+      calc(0.6rem + env(safe-area-inset-right))
+      calc(0.6rem + env(safe-area-inset-bottom))
+      calc(0.6rem + env(safe-area-inset-left));
   }
 
   .brand-mark {

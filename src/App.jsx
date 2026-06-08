@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { categories, gurbaniQuotes, painLocations, seedRequests } from "./data";
+import { describePunjabiVoice, getSpeechPlan } from "./speech";
 import { loadRequests, loadSettings, resetBoard, saveRequests, saveSettings } from "./storage";
 
 const blankRequest = {
@@ -13,19 +14,18 @@ const blankRequest = {
   favorite: false,
 };
 
-function speakText(text, language) {
+function speakText(text, language, rate = 0.86) {
   if (!("speechSynthesis" in window)) return false;
   window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
   const voices = window.speechSynthesis.getVoices();
-  const desiredCode = language === "pa" ? "pa-IN" : "en-US";
-  const matchingVoice = voices.find((voice) => voice.lang === desiredCode);
-  if (matchingVoice) utterance.voice = matchingVoice;
-  utterance.lang = desiredCode;
-  utterance.rate = language === "pa" ? 0.82 : 0.88;
+  const plan = getSpeechPlan(text, language, voices);
+  const utterance = new SpeechSynthesisUtterance(plan.text);
+  if (plan.voice) utterance.voice = plan.voice;
+  utterance.lang = plan.lang;
+  utterance.rate = rate;
   utterance.volume = 1;
   window.speechSynthesis.speak(utterance);
-  return true;
+  return plan.mode;
 }
 
 function IconButton({ children, label, onClick, className = "" }) {
@@ -43,13 +43,16 @@ function RequestButton({ request, language, onActivate }) {
       className={`request-button tone-${request.tone || "default"}`}
       onClick={() => onActivate(request)}
       aria-label={language === "pa" ? request.pa : request.en}
+      lang={language === "pa" ? "pa" : "en"}
       data-testid={`request-${request.id}`}
     >
       <span className="request-icon" aria-hidden="true">
         {request.icon}
       </span>
       <span className="request-label">{language === "pa" ? request.pa : request.en}</span>
-      <span className="request-translation">{language === "pa" ? request.en : request.pa}</span>
+      <span className="request-translation" lang={language === "pa" ? "en" : "pa"}>
+        {language === "pa" ? request.en : request.pa}
+      </span>
     </button>
   );
 }
@@ -151,6 +154,97 @@ function PainModal({ language, onClose, onSpeak }) {
           </div>
         </div>
       ) : null}
+    </Modal>
+  );
+}
+
+function VoiceModal({
+  settings,
+  voiceMode,
+  wakeLockActive,
+  wakeLockSupported,
+  onClose,
+  onKeepAwakeChange,
+  onRateChange,
+}) {
+  const testEnglish = "Hello. The voice is ready.";
+  const testPunjabi = "ਸਤ ਸ੍ਰੀ ਅਕਾਲ ਜੀ। ਅਸੀਂ ਕੁਲਦੀਪ ਕੌਰ ਨੂੰ ਬਹੁਤ ਪਿਆਰ ਕਰਦੇ ਹਾਂ।";
+  const modeCopy = {
+    "native-punjabi": {
+      title: "Native Punjabi voice is ready",
+      detail: "This device provides a Punjabi voice directly.",
+    },
+    "hindi-pronunciation": {
+      title: "Clear Punjabi pronunciation fallback is ready",
+      detail: "This device has no Punjabi web voice, so Bol Sakhi uses its Hindi voice to pronounce Punjabi words clearly.",
+    },
+    "system-hindi-pronunciation": {
+      title: "Punjabi pronunciation fallback is active",
+      detail: "Bol Sakhi sends Punjabi pronunciation to the device in Hindi-compatible script so it will not spell Gurmukhi letter names.",
+    },
+  }[voiceMode];
+
+  return (
+    <Modal title="Voice and device settings" onClose={onClose}>
+      <div className="voice-status">
+        <span aria-hidden="true">🔊</span>
+        <div>
+          <strong>{modeCopy.title}</strong>
+          <p>{modeCopy.detail}</p>
+        </div>
+      </div>
+      <p className="voice-note">
+        On iPhone and iPad, also enable a Punjabi VoiceOver voice in Settings → Accessibility → VoiceOver → Speech
+        if VoiceOver spells the visible button labels.
+      </p>
+      <div className="voice-test-buttons">
+        <button type="button" className="secondary-button" onClick={() => speakText(testEnglish, "en", settings.speechRate)}>
+          ▶ Test English
+        </button>
+        <button type="button" className="primary-button" onClick={() => speakText(testPunjabi, "pa", settings.speechRate)}>
+          ▶ ਪੰਜਾਬੀ ਆਵਾਜ਼ ਸੁਣੋ
+        </button>
+      </div>
+      <label className="rate-control" htmlFor="speech-rate">
+        <span>
+          <strong>Voice speed</strong>
+          <small>Slower speech can be easier to understand.</small>
+        </span>
+        <input
+          id="speech-rate"
+          type="range"
+          min="0.65"
+          max="1.05"
+          step="0.05"
+          value={settings.speechRate}
+          onChange={(event) => onRateChange(Number(event.target.value))}
+        />
+        <output>{Math.round(settings.speechRate * 100)}%</output>
+      </label>
+      <label className={`device-setting ${wakeLockSupported ? "" : "unsupported"}`}>
+        <input
+          type="checkbox"
+          checked={settings.keepAwake && wakeLockSupported}
+          disabled={!wakeLockSupported}
+          onChange={(event) => onKeepAwakeChange(event.target.checked)}
+        />
+        <span>
+          <strong>Keep screen awake</strong>
+          <small>
+            {wakeLockSupported
+              ? wakeLockActive
+                ? "Screen will stay awake while Bol Sakhi is open."
+                : settings.keepAwake
+                  ? "Keep-screen-awake is enabled and will activate when this browser allows it."
+                  : "Helpful when the board stays beside the bed."
+              : "This browser does not offer screen-awake control."}
+          </small>
+        </span>
+      </label>
+      <p className="add-home-note">
+        On iPhone or iPad, use Safari’s Share button and choose <strong>Add to Home Screen</strong> for the
+        simplest full-screen experience.
+      </p>
     </Modal>
   );
 }
@@ -412,9 +506,13 @@ function App() {
   const [lastMessage, setLastMessage] = useState(null);
   const [recentRequests, setRecentRequests] = useState([]);
   const [showPain, setShowPain] = useState(false);
+  const [showVoice, setShowVoice] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * gurbaniQuotes.length));
   const [speechAvailable] = useState(() => "speechSynthesis" in window);
+  const [voiceMode, setVoiceMode] = useState("system-hindi-pronunciation");
+  const [wakeLockActive, setWakeLockActive] = useState(false);
+  const wakeLockSupported = typeof navigator !== "undefined" && "wakeLock" in navigator;
 
   const language = settings.language;
   const activeCategory = settings.activeCategory;
@@ -422,6 +520,52 @@ function App() {
 
   useEffect(() => saveRequests(requests), [requests]);
   useEffect(() => saveSettings(settings), [settings]);
+  useEffect(() => {
+    document.documentElement.lang = language === "pa" ? "pa" : "en";
+  }, [language]);
+  useEffect(() => {
+    if (!("speechSynthesis" in window)) return undefined;
+    const refreshVoices = () => setVoiceMode(describePunjabiVoice(window.speechSynthesis.getVoices()));
+    refreshVoices();
+    window.speechSynthesis.addEventListener?.("voiceschanged", refreshVoices);
+    return () => window.speechSynthesis.removeEventListener?.("voiceschanged", refreshVoices);
+  }, []);
+  useEffect(() => {
+    if (!settings.keepAwake || !wakeLockSupported) {
+      setWakeLockActive(false);
+      return undefined;
+    }
+
+    let wakeLock;
+    let disposed = false;
+
+    const requestWakeLock = async () => {
+      if (document.visibilityState !== "visible") return;
+      if (wakeLock && !wakeLock.released) return;
+      try {
+        wakeLock = await navigator.wakeLock.request("screen");
+        if (!disposed) setWakeLockActive(true);
+        wakeLock.addEventListener("release", () => {
+          if (!disposed) setWakeLockActive(false);
+        });
+      } catch {
+        if (!disposed) setWakeLockActive(false);
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") requestWakeLock();
+    };
+
+    requestWakeLock();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      disposed = true;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      wakeLock?.release();
+    };
+  }, [settings.keepAwake, wakeLockSupported]);
 
   const visibleRequests = useMemo(() => {
     return requests.filter((request) => {
@@ -444,7 +588,7 @@ function App() {
 
   const speakRequest = (request, { track = true } = {}) => {
     const spokenText = language === "pa" ? request.speakPa : request.speakEn;
-    speakText(spokenText, language);
+    speakText(spokenText, language, settings.speechRate);
     setLastMessage(request);
     if (track) {
       setRecentRequests((current) => {
@@ -495,6 +639,9 @@ function App() {
           >
             A+
           </IconButton>
+          <IconButton className="voice-button" label="Voice and device settings" onClick={() => setShowVoice(true)}>
+            🔊
+          </IconButton>
           <button
             type="button"
             className="edit-button"
@@ -507,6 +654,34 @@ function App() {
       </header>
 
       <main>
+        <section className="love-banner">
+          <span className="love-heart" aria-hidden="true">❤</span>
+          <div>
+            <span>{language === "pa" ? "ਸਾਡਾ ਪਿਆਰ" : "From all of us"}</span>
+            <strong lang={language === "pa" ? "pa" : "en"}>
+              {language === "pa" ? "ਅਸੀਂ ਕੁਲਦੀਪ ਕੌਰ ਨੂੰ ਬਹੁਤ ਪਿਆਰ ਕਰਦੇ ਹਾਂ" : "We love Kuldip Kaur"}
+            </strong>
+            <small lang={language === "pa" ? "en" : "pa"}>
+              {language === "pa" ? "We love Kuldip Kaur" : "ਅਸੀਂ ਕੁਲਦੀਪ ਕੌਰ ਨੂੰ ਬਹੁਤ ਪਿਆਰ ਕਰਦੇ ਹਾਂ"}
+            </small>
+          </div>
+          <button
+            type="button"
+            aria-label={language === "pa" ? "ਪਿਆਰ ਦਾ ਸੁਨੇਹਾ ਬੋਲੋ" : "Say the love message"}
+            onClick={() =>
+              speakText(
+                language === "pa"
+                  ? "ਅਸੀਂ ਕੁਲਦੀਪ ਕੌਰ ਨੂੰ ਬਹੁਤ ਪਿਆਰ ਕਰਦੇ ਹਾਂ।"
+                  : "We love Kuldip Kaur.",
+                language,
+                settings.speechRate,
+              )
+            }
+          >
+            🔊 <span>{language === "pa" ? "ਸੁਣੋ" : "Listen"}</span>
+          </button>
+        </section>
+
         <section className="message-panel" aria-live="polite">
           <div className="message-copy">
             <span className="message-kicker">{language === "pa" ? "ਆਖਰੀ ਸੁਨੇਹਾ" : "Last request"}</span>
@@ -606,6 +781,7 @@ function App() {
                   className={activeCategory === category.id ? "active" : ""}
                   aria-pressed={activeCategory === category.id}
                   onClick={() => updateSetting("activeCategory", category.id)}
+                  lang={language === "pa" ? "pa" : "en"}
                   key={category.id}
                 >
                   <span aria-hidden="true">{category.icon}</span>
@@ -629,7 +805,7 @@ function App() {
               <h2>{language === "pa" ? "ਅੱਜ ਦਾ ਗੁਰਬਾਣੀ ਵਿਚਾਰ" : "A Gurbani thought"}</h2>
             </div>
             <div className="gurbani-actions">
-              <button type="button" className="secondary-button" onClick={() => speakText(quote.pa, "pa")}>
+              <button type="button" className="secondary-button" onClick={() => speakText(quote.pa, "pa", settings.speechRate)}>
                 🔊 {language === "pa" ? "ਸੁਣੋ" : "Listen"}
               </button>
               <button
@@ -671,6 +847,17 @@ function App() {
       </main>
 
       {showPain ? <PainModal language={language} onClose={() => setShowPain(false)} onSpeak={speakRequest} /> : null}
+      {showVoice ? (
+        <VoiceModal
+          settings={settings}
+          voiceMode={voiceMode}
+          wakeLockActive={wakeLockActive}
+          wakeLockSupported={wakeLockSupported}
+          onClose={() => setShowVoice(false)}
+          onKeepAwakeChange={(keepAwake) => updateSetting("keepAwake", keepAwake)}
+          onRateChange={(rate) => updateSetting("speechRate", rate)}
+        />
+      ) : null}
       {showCustomize ? (
         <CustomizeModal requests={requests} onChange={setRequests} onClose={() => setShowCustomize(false)} />
       ) : null}

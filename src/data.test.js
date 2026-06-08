@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { categories, painLocations, seedRequests } from "./data";
-import { loadRequests } from "./storage";
+import { loadRequests, loadSettings } from "./storage";
 
 describe("default communication board", () => {
   it("keeps all request ids unique", () => {
@@ -69,5 +69,14 @@ describe("default communication board", () => {
     expect(upgradedIds.has("tv-on")).toBe(true);
     expect(upgradedIds.has("tv-off")).toBe(true);
     expect(upgradedIds.has("tv")).toBe(false);
+  });
+
+  it("normalizes a previously saved speech speed to a supported step", () => {
+    globalThis.localStorage = {
+      getItem: () => JSON.stringify({ speechRate: 0.86 }),
+    };
+
+    expect(loadSettings().speechRate).toBe(0.85);
+    delete globalThis.localStorage;
   });
 });
