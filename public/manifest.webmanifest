@@ -1,0 +1,17 @@
+{
+  "name": "Bol Sakhi Communication Board",
+  "short_name": "Bol Sakhi",
+  "description": "A bilingual, picture-based communication board for stroke recovery.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#fffaf2",
+  "theme_color": "#174b54",
+  "icons": [
+    {
+      "src": "./app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
