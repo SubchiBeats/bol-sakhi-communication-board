@@ -224,6 +224,54 @@ main {
   font-weight: 900;
 }
 
+.recent-panel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  margin: -0.25rem 0 1rem;
+  padding: 0.55rem 0.65rem 0.55rem 0.85rem;
+  border: 2px solid var(--line);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 76%);
+}
+
+.recent-panel > strong {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.recent-list {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.recent-list button {
+  display: flex;
+  min-width: max-content;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.65rem;
+  border: 2px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--paper);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.clear-recent {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: 0.7rem;
+  background: transparent;
+  font-weight: 900;
+}
+
 .speech-warning {
   margin: 0 0 1rem;
   padding: 0.8rem 1rem;
@@ -273,16 +321,16 @@ main {
   background: var(--red);
 }
 
+.quick-stop {
+  background: #9e2631;
+}
+
 .quick-yes {
   background: var(--green);
 }
 
 .quick-no {
   background: #65747b;
-}
-
-.quick-repeat {
-  background: var(--teal);
 }
 
 .category-tabs {
@@ -452,6 +500,51 @@ main {
   font-weight: 800;
 }
 
+.communication-guide {
+  margin: 0 0 1.2rem;
+  border: 2px solid var(--line);
+  border-radius: 1.25rem;
+  background: var(--paper);
+  box-shadow: 0 5px 16px rgb(18 48 55 / 7%);
+}
+
+.communication-guide summary {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 1.2rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.communication-guide summary::-webkit-details-marker {
+  display: none;
+}
+
+.communication-guide summary > span:first-child {
+  font-size: 2rem;
+}
+
+.communication-guide summary strong,
+.communication-guide summary small {
+  display: block;
+}
+
+.communication-guide summary small {
+  margin-top: 0.15rem;
+  color: var(--muted);
+}
+
+.communication-guide ol {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem 2rem;
+  margin: 0;
+  padding: 0 2rem 1.2rem 3rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .secondary-button,
 .primary-button {
   min-height: 3.25rem;
@@ -601,6 +694,53 @@ main {
   margin-bottom: 1rem;
 }
 
+.board-transfer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem 1rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem;
+  border: 2px solid #efc86c;
+  border-radius: 0.9rem;
+  background: #fffdf8;
+}
+
+.board-transfer strong,
+.board-transfer span {
+  display: block;
+}
+
+.board-transfer span {
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.board-transfer p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--teal);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.transfer-actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 .request-editor-list {
   display: grid;
   gap: 0.55rem;
@@ -725,6 +865,10 @@ main {
   .request-editor-row .tiny-check {
     display: none;
   }
+
+  .communication-guide ol {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -748,6 +892,14 @@ main {
 
   .message-panel {
     min-height: auto;
+  }
+
+  .recent-panel {
+    grid-template-columns: 1fr auto;
+  }
+
+  .recent-panel > strong {
+    grid-column: 1 / -1;
   }
 
   .repeat-button {
@@ -815,6 +967,14 @@ main {
   .gurbani-actions {
     width: 100%;
     align-items: stretch;
+  }
+
+  .board-transfer {
+    grid-template-columns: 1fr;
+  }
+
+  .transfer-actions {
+    flex-direction: column;
   }
 
   .severity-buttons {

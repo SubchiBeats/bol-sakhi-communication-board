@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { painLocations, seedRequests } from "./data";
+import { categories, painLocations, seedRequests } from "./data";
+import { loadRequests } from "./storage";
 
 describe("default communication board", () => {
   it("keeps all request ids unique", () => {
@@ -25,6 +26,11 @@ describe("default communication board", () => {
       "pillow-down",
       "curtain-open",
       "curtain-close",
+      "stop",
+      "give-time",
+      "ask-yes-no",
+      "tv-on",
+      "tv-off",
     ];
 
     essential.forEach((id) => expect(ids.has(id), `${id} is missing`).toBe(true));
@@ -40,5 +46,28 @@ describe("default communication board", () => {
       expect(location.pa).toBeTruthy();
       expect(location.speakPa).toBeTruthy();
     });
+  });
+
+  it("assigns every request to a visible category", () => {
+    const categoryIds = new Set(categories.map((category) => category.id));
+    seedRequests.forEach((request) => {
+      expect(categoryIds.has(request.category), `${request.id} has an unknown category`).toBe(true);
+    });
+  });
+
+  it("upgrades an existing saved board with new defaults and TV controls", () => {
+    const existingBoard = [seedRequests.find((request) => request.id === "nurse"), { id: "tv" }];
+    globalThis.localStorage = {
+      getItem: () => JSON.stringify(existingBoard),
+    };
+
+    const upgradedIds = new Set(loadRequests().map((request) => request.id));
+    delete globalThis.localStorage;
+
+    expect(upgradedIds.has("nurse")).toBe(true);
+    expect(upgradedIds.has("stop")).toBe(true);
+    expect(upgradedIds.has("tv-on")).toBe(true);
+    expect(upgradedIds.has("tv-off")).toBe(true);
+    expect(upgradedIds.has("tv")).toBe(false);
   });
 });

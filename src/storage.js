@@ -2,6 +2,7 @@ import { seedRequests } from "./data";
 
 const REQUESTS_KEY = "bol-sakhi-requests-v1";
 const SETTINGS_KEY = "bol-sakhi-settings-v1";
+const SEED_VERSION = 2;
 
 export const defaultSettings = {
   language: "en",
@@ -12,14 +13,24 @@ export const defaultSettings = {
 export function loadRequests() {
   try {
     const saved = JSON.parse(localStorage.getItem(REQUESTS_KEY));
-    return Array.isArray(saved) && saved.length ? saved : seedRequests;
+    if (Array.isArray(saved) && saved.length) return mergeNewDefaults(saved);
+    if (Array.isArray(saved?.requests) && saved.requests.length) {
+      return saved.seedVersion === SEED_VERSION ? saved.requests : mergeNewDefaults(saved.requests);
+    }
+    return seedRequests;
   } catch {
     return seedRequests;
   }
 }
 
 export function saveRequests(requests) {
-  localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
+  localStorage.setItem(REQUESTS_KEY, JSON.stringify({ seedVersion: SEED_VERSION, requests }));
+}
+
+function mergeNewDefaults(savedRequests) {
+  const normalizedRequests = savedRequests.filter((request) => request.id !== "tv");
+  const savedIds = new Set(normalizedRequests.map((request) => request.id));
+  return [...normalizedRequests, ...seedRequests.filter((request) => !savedIds.has(request.id))];
 }
 
 export function loadSettings() {

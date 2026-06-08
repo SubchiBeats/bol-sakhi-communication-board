@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { categories, gurbaniQuotes, painLocations, seedRequests } from "./data";
 import { loadRequests, loadSettings, resetBoard, saveRequests, saveSettings } from "./storage";
 
@@ -242,6 +242,8 @@ function EditForm({ initial, onCancel, onSave }) {
 
 function CustomizeModal({ requests, onChange, onClose }) {
   const [editing, setEditing] = useState(null);
+  const [transferMessage, setTransferMessage] = useState("");
+  const importInputRef = useRef(null);
 
   const saveItem = (item) => {
     if (item.id) {
@@ -274,6 +276,47 @@ function CustomizeModal({ requests, onChange, onClose }) {
     setEditing(null);
   };
 
+  const exportBoard = () => {
+    const payload = {
+      app: "Bol Sakhi",
+      exportedAt: new Date().toISOString(),
+      requests,
+    };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "bol-sakhi-board.json";
+    link.click();
+    URL.revokeObjectURL(url);
+    setTransferMessage("Board file saved. Send it to another family device, then use Import board.");
+  };
+
+  const importBoard = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      const importedRequests = Array.isArray(parsed) ? parsed : parsed.requests;
+      const valid = Array.isArray(importedRequests) && importedRequests.every(
+        (request) =>
+          request.id &&
+          request.icon &&
+          request.en &&
+          request.pa &&
+          request.speakEn &&
+          request.speakPa &&
+          request.category,
+      );
+      if (!valid) throw new Error("Invalid board file");
+      onChange(importedRequests);
+      setTransferMessage(`Imported ${importedRequests.length} requests successfully.`);
+    } catch {
+      setTransferMessage("That file could not be imported. Please choose a Bol Sakhi board file.");
+    } finally {
+      event.target.value = "";
+    }
+  };
+
   return (
     <Modal title="Customize communication board" onClose={onClose} wide>
       {editing ? (
@@ -292,6 +335,28 @@ function CustomizeModal({ requests, onChange, onClose }) {
               Restore defaults
             </button>
           </div>
+          <section className="board-transfer" aria-label="Share board between devices">
+            <div>
+              <strong>Use the same board on another device</strong>
+              <span>Export your family’s changes, send the file, then import it on the other phone or tablet.</span>
+            </div>
+            <div className="transfer-actions">
+              <button type="button" className="secondary-button" onClick={exportBoard}>
+                ↓ Export board
+              </button>
+              <button type="button" className="secondary-button" onClick={() => importInputRef.current?.click()}>
+                ↑ Import board
+              </button>
+              <input
+                ref={importInputRef}
+                className="visually-hidden"
+                type="file"
+                accept="application/json,.json"
+                onChange={importBoard}
+              />
+            </div>
+            {transferMessage ? <p role="status">{transferMessage}</p> : null}
+          </section>
           <div className="request-editor-list">
             {requests.map((request, index) => (
               <div className="request-editor-row" key={request.id}>
@@ -345,6 +410,7 @@ function App() {
   const [requests, setRequests] = useState(loadRequests);
   const [settings, setSettings] = useState(loadSettings);
   const [lastMessage, setLastMessage] = useState(null);
+  const [recentRequests, setRecentRequests] = useState([]);
   const [showPain, setShowPain] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * gurbaniQuotes.length));
@@ -376,14 +442,20 @@ function App() {
     speakRequest(request);
   };
 
-  const speakRequest = (request) => {
+  const speakRequest = (request, { track = true } = {}) => {
     const spokenText = language === "pa" ? request.speakPa : request.speakEn;
     speakText(spokenText, language);
     setLastMessage(request);
+    if (track) {
+      setRecentRequests((current) => {
+        if (current[0]?.speakEn === request.speakEn) return current;
+        return [request, ...current].slice(0, 4);
+      });
+    }
   };
 
   const repeatLast = () => {
-    if (lastMessage) speakRequest(lastMessage);
+    if (lastMessage) speakRequest(lastMessage, { track: false });
   };
 
   return (
@@ -461,6 +533,32 @@ function App() {
           </button>
         </section>
 
+        {recentRequests.length ? (
+          <section className="recent-panel" aria-label={language === "pa" ? "ਹਾਲੀਆ ਸੁਨੇਹੇ" : "Recent requests"}>
+            <strong>{language === "pa" ? "ਹਾਲੀਆ ਸੁਨੇਹੇ" : "Recent requests"}</strong>
+            <div className="recent-list">
+              {recentRequests.map((request, index) => (
+                <button
+                  type="button"
+                  key={`${request.speakEn}-${index}`}
+                  onClick={() => speakRequest(request, { track: false })}
+                >
+                  <span aria-hidden="true">{request.icon}</span>
+                  {language === "pa" ? request.pa : request.en}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="clear-recent"
+              onClick={() => setRecentRequests([])}
+              aria-label={language === "pa" ? "ਹਾਲੀਆ ਸੁਨੇਹੇ ਸਾਫ਼ ਕਰੋ" : "Clear recent requests"}
+            >
+              ✕
+            </button>
+          </section>
+        ) : null}
+
         {!speechAvailable ? (
           <p className="speech-warning" role="alert">
             Speech is not available in this browser. The selected request will still appear in large text.
@@ -479,20 +577,24 @@ function App() {
             </button>
             <button
               type="button"
+              className="quick-stop"
+              onClick={() => activateRequest(requests.find((request) => request.id === "stop") || seedRequests.find((request) => request.id === "stop"))}
+            >
+              ✋ <strong>{language === "pa" ? "ਰੁਕੋ" : "STOP"}</strong>
+            </button>
+            <button
+              type="button"
               className="quick-yes"
-              onClick={() => activateRequest(requests.find((request) => request.id === "yes") || seedRequests[4])}
+              onClick={() => activateRequest(requests.find((request) => request.id === "yes") || seedRequests.find((request) => request.id === "yes"))}
             >
               👍 <strong>{language === "pa" ? "ਹਾਂ" : "YES"}</strong>
             </button>
             <button
               type="button"
               className="quick-no"
-              onClick={() => activateRequest(requests.find((request) => request.id === "no") || seedRequests[5])}
+              onClick={() => activateRequest(requests.find((request) => request.id === "no") || seedRequests.find((request) => request.id === "no"))}
             >
               👎 <strong>{language === "pa" ? "ਨਹੀਂ" : "NO"}</strong>
-            </button>
-            <button type="button" className="quick-repeat" onClick={repeatLast} disabled={!lastMessage}>
-              🔊 <strong>{language === "pa" ? "ਫੇਰ" : "AGAIN"}</strong>
             </button>
           </aside>
 
@@ -543,6 +645,24 @@ function App() {
           <p>{quote.transliteration}</p>
           <p className="quote-meaning">{quote.en}</p>
         </section>
+
+        <details className="communication-guide">
+          <summary>
+            <span aria-hidden="true">🤝</span>
+            <span>
+              <strong>{language === "pa" ? "ਮੇਰੇ ਨਾਲ ਗੱਲ ਕਿਵੇਂ ਕਰਨੀ ਹੈ" : "For caregivers: how to communicate with me"}</strong>
+              <small>
+                {language === "pa" ? "ਹੌਲੀ, ਸਪਸ਼ਟ ਅਤੇ ਆਦਰ ਨਾਲ" : "A quick guide for family and rotating staff"}
+              </small>
+            </span>
+          </summary>
+          <ol>
+            <li>{language === "pa" ? "ਮੇਰੇ ਸਾਹਮਣੇ ਆਓ ਅਤੇ ਮੇਰਾ ਧਿਆਨ ਲਵੋ।" : "Face me, reduce distractions, and get my attention first."}</li>
+            <li>{language === "pa" ? "ਇੱਕ ਵਾਰ ਵਿੱਚ ਇੱਕ ਛੋਟਾ ਸਵਾਲ ਪੁੱਛੋ।" : "Ask one short question at a time, preferably yes or no."}</li>
+            <li>{language === "pa" ? "ਮੈਨੂੰ ਜਵਾਬ ਦੇਣ ਲਈ ਵਾਧੂ ਸਮਾਂ ਦਿਓ।" : "Give me extra time to respond without finishing for me."}</li>
+            <li>{language === "pa" ? "ਜੋ ਤੁਸੀਂ ਸਮਝੇ ਹੋ, ਉਹ ਮੈਨੂੰ ਦੁਬਾਰਾ ਦੱਸੋ।" : "Repeat back what you understood and let me confirm."}</li>
+          </ol>
+        </details>
 
         <p className="care-note">
           This board supports communication but does not replace medical assessment. For sudden changes, breathing

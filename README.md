@@ -6,10 +6,15 @@ Bol Sakhi is a bilingual, picture-based communication board for a person recover
 
 - English and Punjabi labels and speech
 - Large picture buttons for nursing-home needs
-- Always-visible Nurse, Yes, No, and Say Again controls
+- Always-visible Nurse, Stop, Yes, and No controls
 - Pain location and severity chooser
+- Dedicated communication and feelings phrases
+- Recent-request history so missed messages can be replayed
 - Caregiver editor for adding, hiding, favoriting, reordering, and changing requests
-- Saved settings on each device
+- Export/import for sharing a customized board between family devices
+- Saved settings on each device and automatic default-request upgrades
+- TV on/off, volume, and channel requests
+- Quick communication guide for rotating caregivers and staff
 - Refreshable Gurbani thoughts
 - Installable PWA and offline app shell
 
