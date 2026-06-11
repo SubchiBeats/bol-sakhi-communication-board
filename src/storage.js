@@ -2,7 +2,7 @@ import { seedRequests } from "./data";
 
 const REQUESTS_KEY = "bol-sakhi-requests-v1";
 const SETTINGS_KEY = "bol-sakhi-settings-v1";
-const SEED_VERSION = 3;
+const SEED_VERSION = 4;
 
 export const defaultSettings = {
   language: "en",

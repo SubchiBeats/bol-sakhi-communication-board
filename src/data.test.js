@@ -24,6 +24,9 @@ describe("default communication board", () => {
       "turn-right",
       "pillow-up",
       "pillow-down",
+      "bed-up",
+      "bed-down",
+      "hearing-aid",
       "curtain-open",
       "curtain-close",
       "stop",
@@ -55,7 +58,16 @@ describe("default communication board", () => {
     });
   });
 
-  it("upgrades an existing saved board with new defaults and TV controls", () => {
+  it("keeps the new bedside controls immediately available in Favorites", () => {
+    const bedsideControls = seedRequests.filter((request) =>
+      ["bed-up", "bed-down", "hearing-aid"].includes(request.id),
+    );
+
+    expect(bedsideControls).toHaveLength(3);
+    bedsideControls.forEach((request) => expect(request.favorite).toBe(true));
+  });
+
+  it("upgrades an existing saved board with new defaults", () => {
     const existingBoard = [seedRequests.find((request) => request.id === "nurse"), { id: "tv" }];
     globalThis.localStorage = {
       getItem: () => JSON.stringify(existingBoard),
@@ -68,6 +80,9 @@ describe("default communication board", () => {
     expect(upgradedIds.has("stop")).toBe(true);
     expect(upgradedIds.has("tv-on")).toBe(true);
     expect(upgradedIds.has("tv-off")).toBe(true);
+    expect(upgradedIds.has("bed-up")).toBe(true);
+    expect(upgradedIds.has("bed-down")).toBe(true);
+    expect(upgradedIds.has("hearing-aid")).toBe(true);
     expect(upgradedIds.has("tv")).toBe(false);
   });
 

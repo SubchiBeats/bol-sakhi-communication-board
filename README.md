@@ -39,6 +39,7 @@ nothing to read or set up before the first tap.
 
 ### Everyday requests
 - Large picture buttons sized for shared and nursing-home use
+- Favorite shortcuts for raising/lowering the bed and adjusting a hearing aid
 - Always-visible **Nurse**, **Stop**, **Yes**, and **No** controls
 - Pain location and severity chooser
 - Dedicated communication and feelings phrases
